@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit Converter - Hi-Fi mockup</title>
+<style>
+:root{
+--color-bg:#f4f6fa;--color-surface:#ffffff;--color-text:#1a2233;--color-muted:#4a5568;--color-border:#8a94a6;
+--color-primary:#1d4ed8;--color-primary-hover:#1e40af;--color-on-primary:#ffffff;
+--color-focus:#f59e0b;--color-error:#b42318;--color-error-bg:#fdecea;--color-result-bg:#eef4ff;
+--color-mock-bar:#111827;--color-mock-text:#e5e7eb;
+--font-sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+--fs-sm:0.875rem;--fs-md:1rem;--fs-lg:1.25rem;--fs-xl:1.75rem;--fs-result:2rem;
+--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;
+--radius-sm:6px;--radius-md:12px;--shadow-card:0 4px 16px rgba(17,24,39,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);font-size:var(--fs-md);line-height:1.5}
+.mock-bar{background:var(--color-mock-bar);color:var(--color-mock-text);padding:var(--space-2) var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;font-size:var(--fs-sm)}
+.mock-bar strong{margin-right:var(--space-2)}
+.mock-bar button{background:#374151;color:#fff;border:1px solid #6b7280;border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer}
+.mock-bar button[aria-pressed=true]{background:#fbbf24;color:#111827;border-color:#fbbf24}
+:focus-visible{outline:3px solid var(--color-focus);outline-offset:2px}
+main{padding:var(--space-6) var(--space-4);display:flex;justify-content:center}
+.converter-card{background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:var(--space-5);width:100%;max-width:520px}
+h1{font-size:var(--fs-xl);margin:0 0 var(--space-1)}
+.sub{color:var(--color-muted);margin:0 0 var(--space-5)}
+.field{display:flex;flex-direction:column;gap:var(--space-1);margin-bottom:var(--space-4)}
+label{font-weight:600;font-size:var(--fs-sm)}
+input,select{font:inherit;padding:10px var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-sm);background:#fff;color:var(--color-text);min-height:44px;width:100%}
+input[aria-invalid=true]{border-color:var(--color-error);border-width:2px}
+.units{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);align-items:end;margin-bottom:var(--space-4)}
+.units .field{margin:0}
+.btn{font:inherit;font-weight:600;min-height:44px;padding:10px var(--space-5);border-radius:var(--radius-sm);cursor:pointer;border:2px solid var(--color-primary)}
+.btn-primary{background:var(--color-primary);color:var(--color-on-primary)}
+.btn-primary:hover{background:var(--color-primary-hover)}
+.btn-secondary{background:#fff;color:var(--color-primary)}
+.btn-swap{font:inherit;font-weight:600;min-height:44px;background:#fff;color:var(--color-primary);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:10px var(--space-3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);margin-left:auto}
+.actions{display:flex;gap:var(--space-3);margin-bottom:var(--space-4)}
+.error-msg{color:var(--color-error);background:var(--color-error-bg);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--fs-sm);font-weight:600}
+.result-box{display:block;background:var(--color-result-bg);border-radius:var(--radius-sm);padding:var(--space-4);min-height:80px}
+.result-label{font-size:var(--fs-sm);color:var(--color-muted);display:block}
+.result-value{font-size:var(--fs-result);font-weight:700}
+.result-empty{color:var(--color-muted)}
+.note{font-size:var(--fs-sm);color:var(--color-muted);margin-top:var(--space-4);border-top:1px dashed var(--color-border);padding-top:var(--space-3)}
+.notes{max-width:900px;width:100%}
+.notes section{background:#fff;border-radius:var(--radius-md);padding:var(--space-5);margin-bottom:var(--space-4);box-shadow:var(--shadow-card)}
+.notes h2{margin-top:0;font-size:var(--fs-lg)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--space-3)}
+.sw{border:1px solid #d1d5db;border-radius:var(--radius-sm);overflow:hidden;font-size:var(--fs-sm)}
+.sw span{display:block;height:40px}
+.sw div{padding:var(--space-2)}
+table{border-collapse:collapse;width:100%;font-size:var(--fs-sm)}
+th,td{border-bottom:1px solid #e5e7eb;text-align:left;padding:6px}
+code{background:#f3f4f6;padding:1px 4px;border-radius:4px}
+@media (max-width:480px){.units{grid-template-columns:1fr}.actions{flex-direction:column}.btn-swap{margin-left:0}.converter-card{padding:var(--space-4)}main{padding:var(--space-4) var(--space-3)}}
+</style>
+</head>
+<body>
+<nav class="mock-bar" aria-label="Mockup screens"><strong>MOCKUP</strong><span id="mock-buttons"></span></nav>
+<main id="view"></main>
+<script>
+var UNITS=[{id:`ft`,label:`foot (ft)`},{id:`in`,label:`inch (in)`},{id:`cm`,label:`centimetre (cm)`},{id:`m`,label:`metre (m)`},{id:`km`,label:`kilometre (km)`}];
+var STATES=[
+{key:`empty`,name:`1. Empty (first load)`,input:``,from:`m`,to:`cm`,result:null,error:null,note:`US-01: defaults on load and after Clear. Input empty, From = metre, To = centimetre, no result.`},
+{key:`filled`,name:`2. Filled, before Convert`,input:`1`,from:`ft`,to:`cm`,result:null,error:null,note:`US-02 / US-05: values entered; nothing is calculated until Convert or Enter. Any change clears the output.`},
+{key:`result`,name:`3. Result`,input:`1`,from:`ft`,to:`cm`,result:`30.48 cm`,error:null,note:`US-02 / US-03: result after Convert, shown with its unit symbol.`},
+{key:`small`,name:`4. Small result`,input:`1`,from:`in`,to:`km`,result:`0.000025 km`,error:null,note:`US-03: at most 6 decimal places, trailing zeros trimmed, no scientific notation.`},
+{key:`invalid`,name:`5. Error: invalid`,input:`abc`,from:`m`,to:`cm`,result:null,error:`Please enter a valid number`,note:`US-04: empty or non-numeric input. Message in role=alert, linked via aria-describedby. No result.`},
+{key:`negative`,name:`6. Error: negative`,input:`-5`,from:`m`,to:`cm`,result:null,error:`Length cannot be negative`,note:`US-04: negative input (assumed BRD wording). No result.`},
+{key:`notes`,name:`Design notes`}
+];
+var current=`empty`;
+var F={'ft':0.3048,'in':0.0254,'cm':0.01,'m':1,'km':1000};
+function opts(sel){return UNITS.map(function(u){return `<option value="${u.id}"${u.id===sel?` selected`:``}>${u.label}</option>`;}).join(``);}
+function esc(s){return String(s).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/"/g,`&quot;`);}
+function converter(s){
+var err=s.error?`<p id="length-error" class="error-msg" role="alert">${esc(s.error)}</p>`:``;
+var res=s.result?`<span class="result-value">${esc(s.result)}</span>`:`<span class="result-empty">Enter a length and press Convert.</span>`;
+return `<div class="converter-card" data-component="App">
+<h1>Unit Converter</h1><p class="sub">Convert a length between ft, in, cm, m and km.</p>
+<form id="converter-form" novalidate>
+<div class="field"><label for="length-input">Length</label>
+<input id="length-input" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 12.5" value="${esc(s.input)}"${s.error?` aria-invalid="true" aria-describedby="length-error"`:``}>${err}</div>
+<div class="units">
+<div class="field"><label for="from-unit">From</label><select id="from-unit">${opts(s.from)}</select></div>
+<div class="field"><label for="to-unit">To</label><select id="to-unit">${opts(s.to)}</select></div>
+</div>
+<div class="actions"><button type="submit" class="btn btn-primary">Convert</button><button type="button" class="btn btn-secondary" id="clear-btn">Clear</button><button type="button" class="btn-swap" id="swap-btn" aria-label="Swap units" title="Swap units (Could Have)"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l-4 4 4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span aria-hidden="true">Swap</span></button></div>
+<output class="result-box" for="length-input from-unit to-unit" aria-live="polite"><span class="result-label">Result</span>${res}</output>
+</form>
+<p class="note">Mockup state: ${esc(s.note)} Simulated: Convert, Enter, Clear, Swap and the stale-result guard work in this mockup.</p>
+</div>`;}
+function fmt(v,u){var t=v.toFixed(6).replace(/0+$/,``).replace(/\.$/,``);if(t===`-0`)t=`0`;return t+` `+u;}
+function wire(s){
+var f=document.getElementById(`converter-form`);if(!f)return;
+var inp=document.getElementById(`length-input`),fr=document.getElementById(`from-unit`),to=document.getElementById(`to-unit`);
+function state(){return {input:inp.value,from:fr.value,to:to.value,result:null,error:null,note:s.note};}
+function rerender(n,focusId){document.getElementById(`view`).innerHTML=converter(n);wire(n);var el=document.getElementById(focusId);if(el)el.focus();}
+f.addEventListener(`submit`,function(e){e.preventDefault();var n=state();var raw=n.input.trim();
+if(!/^-?\d+(\.\d+)?$/.test(raw)&&!/^-?\.\d+$/.test(raw)){n.error=`Please enter a valid number`;}
+else if(parseFloat(raw)<0){n.error=`Length cannot be negative`;}
+else{n.result=fmt(parseFloat(raw)*F[n.from]/F[n.to],n.to);}
+rerender(n,`length-input`);});
+function stale(id){return function(){if(s.result||s.error){var n=state();rerender(n,id);}};}
+inp.addEventListener(`input`,stale(`length-input`));fr.addEventListener(`change`,stale(`from-unit`));to.addEventListener(`change`,stale(`to-unit`));
+document.getElementById(`clear-btn`).addEventListener(`click`,function(){rerender({input:``,from:`m`,to:`cm`,result:null,error:null,note:s.note},`length-input`);});
+document.getElementById(`swap-btn`).addEventListener(`click`,function(){var n=state();var a=n.from;n.from=n.to;n.to=a;rerender(n,`swap-btn`);});
+}
+var PAL=[[`--color-primary`,`#1d4ed8`,`Convert button, links, Secondary button text (7.0:1 on white)`],[`--color-primary-hover`,`#1e40af`,`Primary hover`],[`--color-text`,`#1a2233`,`Body text (15.9:1)`],[`--color-muted`,`#4a5568`,`Hints, result label (7.5:1)`],[`--color-border`,`#8a94a6`,`Input and select borders (3:1 non-text)`],[`--color-bg`,`#f4f6fa`,`Page background`],[`--color-surface`,`#ffffff`,`Card background`],[`--color-result-bg`,`#eef4ff`,`Result panel`],[`--color-error`,`#b42318`,`Error text and invalid border (6.0:1 on error-bg)`],[`--color-error-bg`,`#fdecea`,`Error message background`],[`--color-focus`,`#f59e0b`,`3 px focus ring`]];
+function notes(){
+var sw=PAL.map(function(p){return `<div class="sw"><span style="background:${p[1]}"></span><div><strong>${p[1]}</strong><br><code>${p[0]}</code><br>${p[2]}</div></div>`;}).join(``);
+return `<div class="notes">
+<section><h2>Design notes</h2><p>Single-card layout, centred, max width 520 px. From and To side by side; one column below 480 px. System font stack only; no external assets.</p></section>
+<section><h2>Colour palette</h2><div class="swatches">${sw}</div></section>
+<section><h2>Typography</h2><table><tr><th>Token</th><th>Size</th><th>Use</th></tr>
+<tr><td><code>--fs-xl</code></td><td>1.75rem / 700</td><td>Title</td></tr><tr><td><code>--fs-result</code></td><td>2rem / 700</td><td>Result value</td></tr><tr><td><code>--fs-lg</code></td><td>1.25rem</td><td>Section headings</td></tr><tr><td><code>--fs-md</code></td><td>1rem / 400</td><td>Body, inputs, buttons (600)</td></tr><tr><td><code>--fs-sm</code></td><td>0.875rem</td><td>Labels (600), errors, hints</td></tr></table><p>Font: <code>--font-sans</code> = system-ui, Segoe UI, Roboto, Arial.</p></section>
+<section><h2>Spacing and radius</h2><p>4 px scale: <code>--space-1</code> 4, <code>--space-2</code> 8, <code>--space-3</code> 12, <code>--space-4</code> 16, <code>--space-5</code> 24, <code>--space-6</code> 32. Radius: <code>--radius-sm</code> 6 px (controls), <code>--radius-md</code> 12 px (card). Touch targets at least 44 px high.</p></section>
+<section><h2>Component styles</h2><table><tr><th>Class</th><th>Style</th></tr>
+<tr><td><code>.btn-primary</code></td><td>Convert: primary fill, white text, form submit (click or Enter)</td></tr>
+<tr><td><code>.btn-secondary</code></td><td>Clear: white fill, primary border and text</td></tr>
+<tr><td><code>.btn-swap</code></td><td>Swap units (Could Have, S9): 44 px high icon + text button, aria-label Swap units, placed last in the actions row after Clear (right-aligned on desktop, full width below 480 px)</td></tr>
+<tr><td><code>.error-msg</code></td><td>role=alert, linked via aria-describedby; input gets aria-invalid and 2 px error border</td></tr>
+<tr><td><code>.result-box</code></td><td>&lt;output aria-live=polite&gt;; empty hint when result is null</td></tr>
+<tr><td><code>:focus-visible</code></td><td>3 px <code>--color-focus</code> outline, 2 px offset</td></tr></table></section>
+<section><h2>Component names (from the SDD)</h2><table><tr><th>SDD name</th><th>In the mockup</th></tr>
+<tr><td><code>App</code> (src/App.jsx)</td><td>.converter-card form; ids length-input, from-unit, to-unit, length-error, clear-btn, swap-btn</td></tr>
+<tr><td><code>UNITS</code></td><td>Dropdown order ft, in, cm, m, km; labels such as metre (m)</td></tr>
+<tr><td><code>DEFAULTS</code></td><td>Empty input/result, From m, To cm (state 1)</td></tr>
+<tr><td><code>MESSAGES</code></td><td>invalid / negative texts (states 5, 6)</td></tr>
+<tr><td><code>formatResult</code></td><td>30.48 cm, 0.000025 km (states 3, 4)</td></tr>
+<tr><td><code>App.css</code></td><td>Tokens on :root as in this file</td></tr></table>
+<p>Tab order: Length, From, To, Convert, Clear, then Swap (only if S9 is built). The first five stops match US-07 and the SDD tab-order test whether or not S9 is built.</p></section>
+</div>`;}
+function render(){
+var s=STATES.filter(function(x){return x.key===current;})[0];
+document.getElementById(`view`).innerHTML=s.key===`notes`?notes():converter(s);
+if(s.key!==`notes`)wire(s);
+document.getElementById(`mock-buttons`).innerHTML=STATES.map(function(x){return `<button type="button" data-k="${x.key}" aria-pressed="${x.key===current}">${x.name}</button>`;}).join(` `);
+Array.prototype.forEach.call(document.querySelectorAll(`.mock-bar button`),function(b){b.addEventListener(`click`,function(){current=b.getAttribute(`data-k`);render();});});
+}
+render();
+</script>
+</body>
+</html>
